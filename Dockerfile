@@ -1,5 +1,5 @@
 # Base image and os that image working on
-FROM node:16-alpine3.16
+# FROM node:16-alpine3.16
 
 # COPY -> is used to copy app file and build it in image
 
@@ -35,7 +35,6 @@ FROM node:16-alpine3.16
 
 #* But , what if we want to execlue some files or directory
 #? We use .dockerignore to execlude files or directories , just like .gitignore 
-COPY . app/
 
 #* After execulding node_modules directory , we need to run `npm install` command on our container to
 #* get node modules , and we can make that using "RUN" command in dockerfile
@@ -93,3 +92,40 @@ COPY . app/
 # ! Loading images
 #? To Load images compressed using "docker image save " command , we use "docker image load " command
 #? docker image load -i "Compressed file name".[extension]
+
+#! Speeding up building our images
+#? We install the files or dependcies that don't changed much times first from their main files
+#? like composer.json or package.json , and then install our project files
+# Base Image
+FROM node:16-alpine3.16
+
+# Make a user with limited permissions
+RUN addgroup app && adduser -S -G app app
+USER app
+
+
+# Specify the working directory
+WORKDIR /app
+RUN touch file.txt
+
+# RUN mkdir testdir
+
+# # Make the changing file first
+
+# COPY package*.json .
+
+# # Installing dependcies if not installed or any change occured to Package.json file
+
+# RUN npm install
+
+# # Copying our project file that we working on not node_modules , because we execlude it
+
+# COPY . .
+
+# # Expose our port that our app will work on
+# # !? that means that our app will work on port 3000
+
+# EXPOSE 3000
+
+# # Start our project by npm start
+# CMD [ "npm" , "start" ]
