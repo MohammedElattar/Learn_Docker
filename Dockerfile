@@ -96,36 +96,118 @@
 #! Speeding up building our images
 #? We install the files or dependcies that don't changed much times first from their main files
 #? like composer.json or package.json , and then install our project files
+
+#! ############################### Containers ###############################################
+
+#! Run a container in detached mode , so we can use our terminal again
+#? we use the -d flag to run in detached mode
+
+# docker run -d -it react-app:1
+
+#! Naming our container 
+#? when we run a new image , docker set a random name to our container , so if we want to set that name 
+#? when running our image we use => --name flag
+# docker run -d --name hello-world react-app:1
+#? Of course if the contaienr is immdeiately closes after that operation
+#? we can use -dt , t here means that container holds input and output , so it works as expected
+# docker run -dt --name test react-app:1
+
+#! Seeing the logs of our container 
+#? it's usefull when error occures and we want to see that error 
+#? docker logs <container_name|container_id>
+#? we have some options with it
+#? -f which follow the logs of that container , so we see realtime logs of that container
+#? -n to spceify how many lines we want to see from the end
+#? -t if we want to see timestamp when each line was created
+
+#! Mapping our containers to host's ports
+#? If we run our application on port 3000 in our container , our host machine 
+#? cannot see that port , and it's closed on it 
+#? so we use -p flag to open that port on host and run our application on that port
+#? Here we tell the host that your port 3000 is listening my port 20 in my container
+#? -p host_port:container_port => that is our syntax
+#? docker run -p 3000:20
+
+#! Executing commands on a running container
+#? we use exec command for that
+# docker exec <container_name|id> <our command>
+#? of course we can use sh to interact with our container 
+#? Here we can type any command we want
+# docker exec -it <container_name|id> sh
+#? and if we exited that exec , our container will still work
+
+#! What if we want to stop , start our container
+#? we use
+# docker stop <container>
+# docker start <container>
+
+#! Volumes
+#? If we store any data on a container , this data is invisible to other container , even with the same image
+#? so that we shouldn't store any data on container , we use volums for that manner
+#? we can create a volume using that command
+# docker volume create <volume_name>
+#? if we want to list all our volums we use 
+# docker volume ls
+#? if we want to inspect our container to show more info about it we use 
+# docker volume inspect <volume_name>
+#? To Make our container use our volume , we pass -v flag to it like that
+# docker run -d -v <volume_name>:<directory on our container>
+# docker run -d -v app:/app/data
+#? If either volume is not exists , or directory , docker will create them for us
+#? but there is a problem in that , if we created a regular user , and docker create that directory for us
+#? we cannot write to that directory , because docker is the root user , and we don't have write permission to write to the file 
+
+#! Copying files or directories between the host and container 
+#? we can use that command to do
+# docker cp <container_id>:<from> <to> // That will copy from the container to our host machine
+#docker cp from <container_id>:<to> // From host to container
+
+#! Live changes from our container to our app or vice versa
+#? if we make a change on our code and we want container to see that change
+#? we can do that using "volumes"
+#? if we are on mac , linux , we use that command
+#* docker run -d --name app -v $(pwd):/app app
+#? if we are on windows , we have to put the full path to our directory we want to share , because there
+#? there is not "pwd" in cmd in windows
+# docker run -dp 5000:3000 -v "C:/xampp/htdocs/learn_docker:/app" --name app app
+#? and we will get a notification from Docker desktop to accept that sharing and it'll work !
+#! ------------------------- And now we are done with docker , next let's see docker compose -------------
+
+
+
+
 # Base Image
 FROM node:16-alpine3.16
 
 # Make a user with limited permissions
 RUN addgroup app && adduser -S -G app app
 USER app
-
-
 # Specify the working directory
 WORKDIR /app
-RUN touch file.txt
 
-# RUN mkdir testdir
+# Add a new directory for the volume 
+RUN mkdir data
 
-# # Make the changing file first
+# Make the changing file first
+# Adding chown falg to add an additional layer without removing the previous one to get permissions
 
-# COPY package*.json .
+COPY --chown=app:node package*.json .
 
-# # Installing dependcies if not installed or any change occured to Package.json file
+# Installing dependcies if not installed or any change occured to Package.json file
 
-# RUN npm install
+RUN npm install
 
-# # Copying our project file that we working on not node_modules , because we execlude it
 
-# COPY . .
 
-# # Expose our port that our app will work on
-# # !? that means that our app will work on port 3000
+# Copying our project file that we working on not node_modules , because we execlude it
+# in .dockerignore file
 
-# EXPOSE 3000
+COPY . .
 
-# # Start our project by npm start
-# CMD [ "npm" , "start" ]
+# Expose our port that our app will work on
+# !? that means that our app will work on port 3000
+
+EXPOSE 3000
+
+# Start our project by npm start
+CMD [ "npm" , "start" ]
